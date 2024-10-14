@@ -60,9 +60,9 @@ def generate_data(im_path):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
-    parser.add_argument('--origin-dir', default='/home/hygao/work/Boosting-Crowd-Counting-via-Multifaceted-Attention/IDCIAv2',
+    parser.add_argument('--origin-dir', default='IDCIAv2',
                         help='original data directory')
-    parser.add_argument('--data-dir', default='/home/hygao/work/Boosting-Crowd-Counting-via-Multifaceted-Attention/cell_Train_Val_Test',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test',
                         help='processed data directory')
     args = parser.parse_args()
     return args
