@@ -73,7 +73,7 @@ class Crowd(data.Dataset):
             return img, len(keypoints), name
 
     def train_transform(self, img, keypoints):
-        """random crop image patch and find people in it"""
+        """random crop image patch"""
         wd, ht = img.size
         st_size = min(wd, ht)
         assert st_size >= self.c_size
