@@ -32,7 +32,18 @@ class Crowd(data.Dataset):
                  method='train'):
 
         self.root_path = root_path
-        self.im_list = sorted(glob(os.path.join(self.root_path, '*.jpg')))
+        im_list = sorted(glob(os.path.join(self.root_path, '*.jpg')))
+        if method == 'train':
+            self.im_list = []
+            for img_path in im_list:
+                gd_path = img_path.replace('jpg', 'npy')
+                keypoints = np.load(gd_path)
+                if keypoints.shape[1] > 2:
+                    self.im_list.append(img_path)
+        else:
+            self.im_list = im_list
+        print(method, '------------>', len(self.im_list))
+
         if method not in ['train', 'val']:
             raise Exception("not implement")
         self.method = method

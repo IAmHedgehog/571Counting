@@ -68,14 +68,18 @@ def parse_args():
     return args
 
 
-def split_data(folder):
+def split_data(folder, num_fold):
     image_paths = glob(f"{folder}/images/*.tiff")
     print("----------------->", len(image_paths))
     random.shuffle(image_paths)
-    val_num = len(image_paths)//5
-    val_image_paths = image_paths[:val_num]
-    train_image_paths = image_paths[val_num:]
-    return train_image_paths, val_image_paths, val_image_paths
+    val_num = len(image_paths) // num_fold
+    # val_image_paths = image_paths[:val_num]
+    # train_image_paths = image_paths[val_num:]
+    # return train_image_paths, val_image_paths, val_image_paths
+    data = []
+    for i in range(num_fold):
+        data.append(image_paths[val_num*i: val_num*(i+1)])
+    return data
 
 
 if __name__ == '__main__':
@@ -83,37 +87,44 @@ if __name__ == '__main__':
     save_dir = args.data_dir
     min_size = 512
     max_size = 2048
-    train_imgs, val_imgs, test_imgs = split_data(args.origin_dir)
-
-    for phase in ['Train', 'Test']:
-        sub_dir = os.path.join(args.origin_dir, phase)
-        if phase == 'Train':
-            sub_phase_list = {'train': train_imgs, 'val': val_imgs}
-            for sub_phase, sub_imgs in sub_phase_list.items():
-                sub_save_dir = os.path.join(save_dir, sub_phase)
+    num_fold = 5
+    img_folds = split_data(args.origin_dir, num_fold)
+    for fold_idx in range(num_fold):
+        # process fold fold_idx
+        train_imgs = []
+        for idx, fold in enumerate(img_folds):
+            if idx != fold_idx:
+                train_imgs.extend(fold)
+        val_imgs = img_folds[fold_idx]
+        test_imgs = val_imgs
+        for phase in ['Train', 'Test']:
+            if phase == 'Train':
+                sub_phase_list = {'train': train_imgs, 'val': val_imgs}
+                for sub_phase, sub_imgs in sub_phase_list.items():
+                    sub_save_dir = os.path.join(f'{save_dir}_{fold_idx}', sub_phase)
+                    if not os.path.exists(sub_save_dir):
+                        os.makedirs(sub_save_dir)
+                    for im_path in sub_imgs:
+                        name = os.path.basename(im_path)
+                        print(name)
+                        im, points = generate_data(im_path)
+                        if sub_phase == 'train':
+                            dis = find_dis(points)
+                            points = np.concatenate((points, dis), axis=1)
+                        im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+                        im.save(im_save_path)
+                        gd_save_path = im_save_path.replace('jpg', 'npy')
+                        np.save(gd_save_path, points)
+            else:
+                sub_save_dir = os.path.join(save_dir, 'test')
                 if not os.path.exists(sub_save_dir):
                     os.makedirs(sub_save_dir)
-                for im_path in sub_imgs:
+            
+                for im_path in test_imgs:
                     name = os.path.basename(im_path)
                     print(name)
                     im, points = generate_data(im_path)
-                    if sub_phase == 'train':
-                        dis = find_dis(points)
-                        points = np.concatenate((points, dis), axis=1)
                     im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
                     im.save(im_save_path)
                     gd_save_path = im_save_path.replace('jpg', 'npy')
                     np.save(gd_save_path, points)
-        else:
-            sub_save_dir = os.path.join(save_dir, 'test')
-            if not os.path.exists(sub_save_dir):
-                os.makedirs(sub_save_dir)
-           
-            for im_path in test_imgs:
-                name = os.path.basename(im_path)
-                print(name)
-                im, points = generate_data(im_path)
-                im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
-                im.save(im_save_path)
-                gd_save_path = im_save_path.replace('jpg', 'npy')
-                np.save(gd_save_path, points)
