@@ -7,7 +7,7 @@ args = None
 def parse_args():
     parser = argparse.ArgumentParser(description='Train ')
     parser.add_argument('--model-name', default='vgg19_trans', help='the name of the model')
-    parser.add_argument('--data-dir', default='cell_Train_Val_Test',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test_1',
                         help='training data directory')
     parser.add_argument('--save-dir', default='model',
                         help='directory to save models.')
