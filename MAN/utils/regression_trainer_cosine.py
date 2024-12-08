@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import torch
+import json
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
@@ -82,6 +83,7 @@ class RegTrainer(Trainer):
         self.best_acp = np.inf
         self.save_all = args.save_all
         self.best_count = 0
+        self.losses = []
 
     def train(self):
         """training process"""
@@ -94,6 +96,7 @@ class RegTrainer(Trainer):
             if (epoch+1) % args.val_epoch == 0 and (epoch+1) >= args.val_start:
                 self.val_epoch()
         self.show_best()
+        json.dump(self.losses, open(os.path.join(self.save_dir, 'losses.json'), 'w'))
 
     def train_eopch(self):
         epoch_loss = AverageMeter()
@@ -141,6 +144,7 @@ class RegTrainer(Trainer):
         #     self.epoch, epoch_loss.get_avg(), np.sqrt(epoch_mse.get_avg()), epoch_mae.get_avg(), epoch_acp.get_avg(),
         #     time.time()-epoch_start))
         logging.info('Epoch {} Train, Loss: {:.2f}\n'.format(self.epoch, epoch_loss.get_avg()))
+        self.losses.append(epoch_loss.get_avg())
         model_state_dic = self.model.state_dict()
         save_path = os.path.join(self.save_dir, '{}_ckpt.tar'.format(self.epoch))
         torch.save({
