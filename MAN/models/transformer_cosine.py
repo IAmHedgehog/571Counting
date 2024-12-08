@@ -60,7 +60,6 @@ class TransformerEncoderLayer(nn.Module):
                      src_key_padding_mask: Optional[Tensor] = None,
                      pos: Optional[Tensor] = None):
         q = k = self.with_pos_embed(src, pos)
-
         src2, mask = self.self_attn(q, k, shape, src)
         feature = torch.squeeze(src, dim=1)
         consistent_feature = torch.matmul(mask, feature)

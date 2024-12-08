@@ -47,8 +47,7 @@ class RegTrainer(Trainer):
         self.dataloaders = {x: DataLoader(self.datasets[x],
                                           collate_fn=(train_collate
                                                       if x == 'train' else default_collate),
-                                          batch_size=(args.batch_size
-                                          if x == 'train' else 1),
+                                          batch_size=(args.batch_size if x == 'train' else 1),
                                           shuffle=(True if x == 'train' else False),
                                           num_workers=args.num_workers*self.device_count,
                                           pin_memory=(True if x == 'train' else False))
@@ -80,6 +79,7 @@ class RegTrainer(Trainer):
         self.save_list = Save_Handle(max_num=args.max_model_num)
         self.best_mae = np.inf
         self.best_mse = np.inf
+        self.best_acp = np.inf
         self.save_all = args.save_all
         self.best_count = 0
 
@@ -91,13 +91,15 @@ class RegTrainer(Trainer):
             self.epoch = epoch
             # self.val_epoch()
             self.train_eopch()
-            if epoch % args.val_epoch == 0 and epoch >= args.val_start:
+            if (epoch+1) % args.val_epoch == 0 and (epoch+1) >= args.val_start:
                 self.val_epoch()
+        self.show_best()
 
     def train_eopch(self):
         epoch_loss = AverageMeter()
         epoch_mae = AverageMeter()
         epoch_mse = AverageMeter()
+        epoch_acp = AverageMeter()
         epoch_start = time.time()
         self.model.train()  # Set model to training mode
 
@@ -110,31 +112,35 @@ class RegTrainer(Trainer):
             targets = [t.to(self.device) for t in targets]
 
             with torch.set_grad_enabled(True):
-                outputs, features = self.model(inputs)
-                prob_list = self.post_prob(points, st_sizes)
-                loss = self.criterion(prob_list, targets, outputs)
-                loss_c = 0
-                for feature in features:
-                    mean_feature = torch.mean(feature, dim=0)
-                    mean_sum = torch.sum(mean_feature**2)**0.5
-                    cosine = 1 - torch.sum(feature*mean_feature, dim=1) / (mean_sum * torch.sum(feature**2, dim=1)**0.5 + 1e-5)
-                    loss_c += torch.sum(cosine)
-                loss += loss_c
+                for i in range(inputs.shape[0]):
+                    outputs, features = self.model(inputs[i:i+1])
+                    prob_list = self.post_prob(points[i:i+1], st_sizes[i:i+1])
+                    loss = self.criterion(prob_list, targets[i:i+1], outputs)
+                    loss_c = 0
+                    for feature in features:
+                        mean_feature = torch.mean(feature, dim=0)
+                        mean_sum = torch.sum(mean_feature**2)**0.5
+                        cosine = 1 - torch.sum(feature*mean_feature, dim=1) / (mean_sum * torch.sum(feature**2, dim=1)**0.5 + 1e-5)
+                        loss_c += torch.sum(cosine)
+                    loss += loss_c
 
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
                 N = inputs.size(0)
-                pre_count = torch.sum(outputs.view(N, -1), dim=1).detach().cpu().numpy()
-                res = pre_count - gd_count
+                # pre_count = torch.sum(outputs.view(N, -1), dim=1).detach().cpu().numpy()
+                # res = pre_count - gd_count
                 epoch_loss.update(loss.item(), N)
-                epoch_mse.update(np.mean(res * res), N)
-                epoch_mae.update(np.mean(abs(res)), N)
+                # epoch_mse.update(np.mean(res * res), N)
+                # epoch_mae.update(np.mean(abs(res)), N)
+                # epoch_acp.update(np.sum(abs(res) <= (0.05 * gd_count)), N)
 
-        logging.info('Epoch {} Train, Loss: {:.2f}, MSE: {:.2f} MAE: {:.2f}, Cost {:.1f} sec'
-                     .format(self.epoch, epoch_loss.get_avg(), np.sqrt(epoch_mse.get_avg()), epoch_mae.get_avg(),
-                             time.time()-epoch_start))
+
+        # logging.info('Epoch {} Train, Loss: {:.2f}, MSE: {:.2f} MAE: {:.2f}, ACP: {:.2f}, Cost {:.1f} sec'.format(
+        #     self.epoch, epoch_loss.get_avg(), np.sqrt(epoch_mse.get_avg()), epoch_mae.get_avg(), epoch_acp.get_avg(),
+        #     time.time()-epoch_start))
+        logging.info('Epoch {} Train, Loss: {:.2f}\n'.format(self.epoch, epoch_loss.get_avg()))
         model_state_dic = self.model.state_dict()
         save_path = os.path.join(self.save_dir, '{}_ckpt.tar'.format(self.epoch))
         torch.save({
@@ -148,6 +154,7 @@ class RegTrainer(Trainer):
         epoch_start = time.time()
         self.model.eval()  # Set model to evaluate mode
         epoch_res = []
+        epoch_acp = []
         # Iterate over data.
         for inputs, count, name in self.dataloaders['val']:
             inputs = inputs.to(self.device)
@@ -180,33 +187,40 @@ class RegTrainer(Trainer):
                         output = self.model(input)[0]
                         pre_count += torch.sum(output)
                 res = count[0].item() - pre_count.item()
+                acp = abs(res) <= (0.05 * count[0].item())
                 epoch_res.append(res)
+                epoch_acp.append(acp)
             else:
                 with torch.set_grad_enabled(False):
                     outputs = self.model(inputs)[0]
                     # save_results(inputs, outputs, self.vis_dir, '{}.jpg'.format(name[0]))
                     res = count[0].item() - torch.sum(outputs).item()
+                    acp = (abs(res) <= (0.05 * count[0].item()))
                     epoch_res.append(res)
+                    epoch_acp.append(acp)
 
         epoch_res = np.array(epoch_res)
         mse = np.sqrt(np.mean(np.square(epoch_res)))
         mae = np.mean(np.abs(epoch_res))
-        logging.info('Epoch {} Val, MSE: {:.2f} MAE: {:.2f}, Cost {:.1f} sec'
-                     .format(self.epoch, mse, mae, time.time()-epoch_start))
+        acp = np.mean(epoch_acp)
+        logging.info('Epoch {} Val, MSE: {:.2f} MAE: {:.2f}, ACP: {:.2f}, Cost {:.1f} sec'
+                     .format(self.epoch, mse, mae, acp, time.time()-epoch_start))
 
         model_state_dic = self.model.state_dict()
-        logging.info("best mse {:.2f} mae {:.2f}".format(self.best_mse, self.best_mae))
+        logging.info("best mse {:.2f} mae {:.2f}, acp {:.2f}".format(self.best_mse, self.best_mae, self.best_acp))
         if (2.0 * mse + mae) < (2.0 * self.best_mse + self.best_mae):
             self.best_mse = mse
             self.best_mae = mae
-            logging.info("save best mse {:.2f} mae {:.2f} model epoch {}".format(self.best_mse,
-                                                                                 self.best_mae,
-                                                                                 self.epoch))
+            self.best_acp = acp
+            logging.info("save best mse {:.2f} mae {:.2f} acp {:.2f}, model epoch {}".format(
+                self.best_mse, self.best_mae, self.best_acp, self.epoch))
             if self.save_all:
                 torch.save(model_state_dic, os.path.join(self.save_dir, 'best_model_{}.pth'.format(self.best_count)))
                 self.best_count += 1
             else:
                 torch.save(model_state_dic, os.path.join(self.save_dir, 'best_model.pth'))
 
-
+    def show_best(self):
+        logging.info("Best mse {:.2f} mae {:.2f} acp {:.2f}".format(
+                self.best_mse, self.best_mae, self.best_acp))
 
