@@ -27,7 +27,7 @@ def parse_args():
                         help='the num of steps to log training information')
     parser.add_argument('--val-start', type=int, default=10,
                         help='the epoch start to val')
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=4,
                         help='train batch size')
     parser.add_argument('--device', default='0', help='assign device')
     parser.add_argument('--num-workers', type=int, default=4,

@@ -62,7 +62,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
     parser.add_argument('--origin-dir', default='IDCIAv2',
                         help='original data directory')
-    parser.add_argument('--data-dir', default='cell_Train_Val_Test',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2',
                         help='processed data directory')
     args = parser.parse_args()
     return args

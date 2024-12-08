@@ -115,10 +115,11 @@ class RegTrainer(Trainer):
             targets = [t.to(self.device) for t in targets]
 
             with torch.set_grad_enabled(True):
+                loss = 0
                 for i in range(inputs.shape[0]):
                     outputs, features = self.model(inputs[i:i+1])
                     prob_list = self.post_prob(points[i:i+1], st_sizes[i:i+1])
-                    loss = self.criterion(prob_list, targets[i:i+1], outputs)
+                    loss += self.criterion(prob_list, targets[i:i+1], outputs)
                     loss_c = 0
                     for feature in features:
                         mean_feature = torch.mean(feature, dim=0)
@@ -134,7 +135,7 @@ class RegTrainer(Trainer):
                 N = inputs.size(0)
                 # pre_count = torch.sum(outputs.view(N, -1), dim=1).detach().cpu().numpy()
                 # res = pre_count - gd_count
-                epoch_loss.update(loss.item(), N)
+                epoch_loss.update(loss.item()/N, N)
                 # epoch_mse.update(np.mean(res * res), N)
                 # epoch_mae.update(np.mean(abs(res)), N)
                 # epoch_acp.update(np.sum(abs(res) <= (0.05 * gd_count)), N)

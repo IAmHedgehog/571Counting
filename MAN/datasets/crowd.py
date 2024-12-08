@@ -90,6 +90,7 @@ class Crowd(data.Dataset):
         assert st_size >= self.c_size
         i, j, h, w = random_crop(ht, wd, self.c_size, self.c_size)
         img = F.crop(img, i, j, h, w)
+        # img = F.center_crop(img, [self.c_size, self.c_size])
         if len(keypoints) > 0:
             nearest_dis = np.clip(keypoints[:, 2], 4.0, 128.0)
 
