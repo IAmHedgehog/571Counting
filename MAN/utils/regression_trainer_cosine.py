@@ -223,4 +223,3 @@ class RegTrainer(Trainer):
     def show_best(self):
         logging.info("Best mse {:.2f} mae {:.2f} acp {:.2f}".format(
                 self.best_mse, self.best_mae, self.best_acp))
-
