@@ -63,7 +63,7 @@ def generate_data(im_path):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Test ')
+    parser = argparse.ArgumentParser(description='Process cell counting data')
     parser.add_argument('--origin-dir', default='IDCIAv2',
                         help='original data directory')
     parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2',

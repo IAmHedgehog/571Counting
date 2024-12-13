@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
     parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2_Test',
                         help='testing data directory')
-    parser.add_argument('--save-dir', default='model_v2_3/1207-222330/best_model.pth',
+    parser.add_argument('--save-dir', default='best_model.pth',
                         help='model directory')
     parser.add_argument('--device', default='0', help='assign device')
     parser.add_argument('--out-csv', default='submission.csv')
