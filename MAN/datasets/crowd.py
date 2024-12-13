@@ -44,7 +44,7 @@ class Crowd(data.Dataset):
             self.im_list = im_list
         print(method, '------------>', len(self.im_list))
 
-        if method not in ['train', 'val']:
+        if method not in ['train', 'val', 'test']:
             raise Exception("not implement")
         self.method = method
 
@@ -77,11 +77,14 @@ class Crowd(data.Dataset):
         if self.method == 'train':
             keypoints = np.load(gd_path)
             return self.train_transform(img, keypoints)
-        elif self.method == 'val':
-            keypoints = np.load(gd_path)
+        else:
+            if os.path.exists(gd_path):
+                num_keypoints = len(np.load(gd_path))
+            else:
+                num_keypoints = -1
             img = self.trans(img)
             name = os.path.basename(img_path).split('.')[0]
-            return img, len(keypoints), name
+            return img, num_keypoints, name
 
     def train_transform(self, img, keypoints):
         """random crop image patch"""

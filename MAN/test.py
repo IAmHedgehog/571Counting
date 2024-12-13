@@ -11,11 +11,12 @@ args = None
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
-    parser.add_argument('--data-dir', default='JHU_Train_Val_Test',
-                        help='training data directory')
-    parser.add_argument('--save-dir', default='model/model.pth',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2_Test',
+                        help='testing data directory')
+    parser.add_argument('--save-dir', default='model_v2_3/1207-222330/best_model.pth',
                         help='model directory')
     parser.add_argument('--device', default='0', help='assign device')
+    parser.add_argument('--out-csv', default='submission.csv')
     args = parser.parse_args()
     return args
 
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     args = parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.device.strip()  # set vis gpu
 
-    datasets = Crowd(os.path.join(args.data_dir, 'test'), 512, 8, is_gray=False, method='val')
+    datasets = Crowd(os.path.join(args.data_dir, 'test'), 512, 8, is_gray=False, method='test')
     dataloader = torch.utils.data.DataLoader(datasets, 1, shuffle=False,
                                              num_workers=8, pin_memory=False)
 
@@ -35,6 +36,7 @@ if __name__ == '__main__':
 
     model.load_state_dict(torch.load(args.save_dir, device))
     epoch_minus = []
+    output_list = []
     for inputs, count, name in dataloader:
         inputs = inputs.to(device)
         b, c, h, w = inputs.shape
@@ -69,11 +71,18 @@ if __name__ == '__main__':
         else:
             with torch.set_grad_enabled(False):
                 outputs = model(inputs)[0]
-                res = count[0].item() - torch.sum(outputs).item()
+                pre_count = torch.sum(outputs)
+                res = count[0].item() - pre_count.item()
                 epoch_minus.append(res)
+        output_list.append((name[0], pre_count.item()))
 
     epoch_minus = np.array(epoch_minus)
     mse = np.sqrt(np.mean(np.square(epoch_minus)))
     mae = np.mean(np.abs(epoch_minus))
     log_str = 'mae {}, mse {}'.format(mae, mse)
     print(log_str)
+
+    with open(args.out_csv, 'w') as csv_f:
+        csv_f.write('filename,prediction\n')
+        for name, cnt in output_list:
+            csv_f.write(f'{name}.tiff,{round(cnt)}\n')

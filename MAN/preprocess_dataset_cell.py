@@ -44,17 +44,21 @@ def find_dis(point):
 def generate_data(im_path):
     im = Image.open(im_path)
     im_w, im_h = im.size
-    csv_path = im_path.replace('images', 'ground_truth').replace('.tiff', '.csv')
-    df = pd.read_csv(csv_path)
-    points = df.to_numpy().astype(np.float32)
-    # points = loadmat(mat_path)['annPoints'].astype(np.float32)
-    idx_mask = (points[:, 0] >= 0) * (points[:, 0] <= im_w) * (points[:, 1] >= 0) * (points[:, 1] <= im_h)
-    points = points[idx_mask]
     im_h, im_w, rr = cal_new_size(im_h, im_w, min_size, max_size)
     im = np.array(im)
+    csv_path = im_path.replace('images', 'ground_truth').replace('.tiff', '.csv')
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+        points = df.to_numpy().astype(np.float32)
+        # points = loadmat(mat_path)['annPoints'].astype(np.float32)
+        idx_mask = (points[:, 0] >= 0) * (points[:, 0] <= im_w) * (points[:, 1] >= 0) * (points[:, 1] <= im_h)
+        points = points[idx_mask]
+    else:
+        points = None
     if rr != 1.0:
         im = cv2.resize(np.array(im), (im_w, im_h), cv2.INTER_CUBIC)
-        points = points * rr
+        if points is not None:
+            points = points * rr
     return Image.fromarray(im), points
 
 
@@ -64,6 +68,8 @@ def parse_args():
                         help='original data directory')
     parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2',
                         help='processed data directory')
+    parser.add_argument('--split', default='train',
+                        help='which folder is processing.')
     args = parser.parse_args()
     return args
 
@@ -87,44 +93,57 @@ if __name__ == '__main__':
     save_dir = args.data_dir
     min_size = 512
     max_size = 2048
-    num_fold = 5
-    img_folds = split_data(args.origin_dir, num_fold)
-    for fold_idx in range(num_fold):
-        # process fold fold_idx
-        train_imgs = []
-        for idx, fold in enumerate(img_folds):
-            if idx != fold_idx:
-                train_imgs.extend(fold)
-        val_imgs = img_folds[fold_idx]
-        test_imgs = val_imgs
-        for phase in ['Train', 'Test']:
-            if phase == 'Train':
-                sub_phase_list = {'train': train_imgs, 'val': val_imgs}
-                for sub_phase, sub_imgs in sub_phase_list.items():
-                    sub_save_dir = os.path.join(f'{save_dir}_{fold_idx}', sub_phase)
+
+    if args.split == 'test':
+        sub_save_dir = os.path.join(save_dir, 'test')
+        if not os.path.exists(sub_save_dir):
+            os.makedirs(sub_save_dir)
+        test_imgs = glob(f"{args.origin_dir}/test_imgs/*.tiff")
+        for im_path in test_imgs:
+            name = os.path.basename(im_path)
+            print(name)
+            im, points = generate_data(im_path)
+            im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+            im.save(im_save_path)
+    else:
+        num_fold = 5
+        img_folds = split_data(args.origin_dir, num_fold)
+        for fold_idx in range(num_fold):
+            # process fold fold_idx
+            train_imgs = []
+            for idx, fold in enumerate(img_folds):
+                if idx != fold_idx:
+                    train_imgs.extend(fold)
+            val_imgs = img_folds[fold_idx]
+            test_imgs = val_imgs
+            for phase in ['Train', 'Test']:
+                if phase == 'Train':
+                    sub_phase_list = {'train': train_imgs, 'val': val_imgs}
+                    for sub_phase, sub_imgs in sub_phase_list.items():
+                        sub_save_dir = os.path.join(f'{save_dir}_{fold_idx}', sub_phase)
+                        if not os.path.exists(sub_save_dir):
+                            os.makedirs(sub_save_dir)
+                        for im_path in sub_imgs:
+                            name = os.path.basename(im_path)
+                            print(name)
+                            im, points = generate_data(im_path)
+                            if sub_phase == 'train':
+                                dis = find_dis(points)
+                                points = np.concatenate((points, dis), axis=1)
+                            im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+                            im.save(im_save_path)
+                            gd_save_path = im_save_path.replace('jpg', 'npy')
+                            np.save(gd_save_path, points)
+                else:
+                    sub_save_dir = os.path.join(save_dir, 'test')
                     if not os.path.exists(sub_save_dir):
                         os.makedirs(sub_save_dir)
-                    for im_path in sub_imgs:
+                
+                    for im_path in test_imgs:
                         name = os.path.basename(im_path)
                         print(name)
                         im, points = generate_data(im_path)
-                        if sub_phase == 'train':
-                            dis = find_dis(points)
-                            points = np.concatenate((points, dis), axis=1)
                         im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
                         im.save(im_save_path)
                         gd_save_path = im_save_path.replace('jpg', 'npy')
                         np.save(gd_save_path, points)
-            else:
-                sub_save_dir = os.path.join(save_dir, 'test')
-                if not os.path.exists(sub_save_dir):
-                    os.makedirs(sub_save_dir)
-            
-                for im_path in test_imgs:
-                    name = os.path.basename(im_path)
-                    print(name)
-                    im, points = generate_data(im_path)
-                    im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
-                    im.save(im_save_path)
-                    gd_save_path = im_save_path.replace('jpg', 'npy')
-                    np.save(gd_save_path, points)
