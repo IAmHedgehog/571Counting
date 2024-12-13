@@ -1,5 +1,5 @@
 # COM S 5710 Fall 2024 Course Project Code (Group 7)
-This code is based on the official implement [Link]{https://github.com/LoraLinH/Boosting-Crowd-Counting-via-Multifaceted-Attention} of CVPR 2022 paper 'Boosting Crowd Counting via Multifaceted Attention'
+This code is based on the official implement [Link](https://github.com/LoraLinH/Boosting-Crowd-Counting-via-Multifaceted-Attention) of CVPR 2022 paper 'Boosting Crowd Counting via Multifaceted Attention'
 
 # Team members
 
