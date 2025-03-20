@@ -32,11 +32,12 @@ class Crowd(data.Dataset):
                  method='train'):
 
         self.root_path = root_path
-        im_list = sorted(glob(os.path.join(self.root_path, '*.jpg')))
+        print('------------------------->', root_path)
+        im_list = sorted(glob(os.path.join(self.root_path, '*.png')))
         if method == 'train':
             self.im_list = []
             for img_path in im_list:
-                gd_path = img_path.replace('jpg', 'npy')
+                gd_path = img_path.replace('png', 'npy')
                 keypoints = np.load(gd_path)
                 if keypoints.shape[1] > 2:
                     self.im_list.append(img_path)
@@ -50,7 +51,7 @@ class Crowd(data.Dataset):
 
         self.c_size = crop_size
         self.d_ratio = downsample_ratio
-        assert self.c_size % self.d_ratio == 0
+        assert self.c_size % self.d_ratio == 0, f'{self.c_size}, {self.d_ratio}'
         self.dc_size = self.c_size // self.d_ratio
 
         if is_gray:
@@ -69,7 +70,7 @@ class Crowd(data.Dataset):
 
     def __getitem__(self, item):
         img_path = self.im_list[item]
-        gd_path = img_path.replace('jpg', 'npy')
+        gd_path = img_path.replace('png', 'npy')
         try:
             img = Image.open(img_path).convert('RGB')
         except:

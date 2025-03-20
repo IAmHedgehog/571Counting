@@ -23,9 +23,8 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.device.strip()  # set vis gpu
 
-    datasets = Crowd(os.path.join(args.data_dir, 'test'), 512, 8, is_gray=False, method='test')
+    datasets = Crowd(os.path.join(args.data_dir, 'test'), 224, 8, is_gray=False, method='test')
     dataloader = torch.utils.data.DataLoader(datasets, 1, shuffle=False,
                                              num_workers=8, pin_memory=False)
 

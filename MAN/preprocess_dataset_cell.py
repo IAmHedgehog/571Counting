@@ -46,7 +46,7 @@ def generate_data(im_path):
     im_w, im_h = im.size
     im_h, im_w, rr = cal_new_size(im_h, im_w, min_size, max_size)
     im = np.array(im)
-    csv_path = im_path.replace('images', 'ground_truth').replace('.tiff', '.csv')
+    csv_path = im_path.replace('images', 'ground_truth').replace('.png', '.csv')
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
         points = df.to_numpy().astype(np.float32)
@@ -64,18 +64,18 @@ def generate_data(im_path):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process cell counting data')
-    parser.add_argument('--origin-dir', default='IDCIAv2',
+    parser.add_argument('--origin-dir', default='cell_resize_224',
                         help='original data directory')
-    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v2',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v3_test',
                         help='processed data directory')
-    parser.add_argument('--split', default='train',
+    parser.add_argument('--split', default='test',
                         help='which folder is processing.')
     args = parser.parse_args()
     return args
 
 
 def split_data(folder, num_fold):
-    image_paths = glob(f"{folder}/images/*.tiff")
+    image_paths = glob(f"{folder}/trainval/images/*.png")
     print("----------------->", len(image_paths))
     random.shuffle(image_paths)
     val_num = len(image_paths) // num_fold
@@ -91,19 +91,19 @@ def split_data(folder, num_fold):
 if __name__ == '__main__':
     args = parse_args()
     save_dir = args.data_dir
-    min_size = 512
-    max_size = 2048
+    min_size = 224
+    max_size = 224
 
     if args.split == 'test':
         sub_save_dir = os.path.join(save_dir, 'test')
         if not os.path.exists(sub_save_dir):
             os.makedirs(sub_save_dir)
-        test_imgs = glob(f"{args.origin_dir}/test_imgs/*.tiff")
+        test_imgs = glob(f"{args.origin_dir}/test/images/*.png")
         for im_path in test_imgs:
             name = os.path.basename(im_path)
             print(name)
             im, points = generate_data(im_path)
-            im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+            im_save_path = os.path.join(sub_save_dir, name)
             im.save(im_save_path)
     else:
         num_fold = 5
@@ -130,9 +130,9 @@ if __name__ == '__main__':
                             if sub_phase == 'train':
                                 dis = find_dis(points)
                                 points = np.concatenate((points, dis), axis=1)
-                            im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+                            im_save_path = os.path.join(sub_save_dir, name)
                             im.save(im_save_path)
-                            gd_save_path = im_save_path.replace('jpg', 'npy')
+                            gd_save_path = im_save_path.replace('png', 'npy')
                             np.save(gd_save_path, points)
                 else:
                     sub_save_dir = os.path.join(save_dir, 'test')
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                         name = os.path.basename(im_path)
                         print(name)
                         im, points = generate_data(im_path)
-                        im_save_path = os.path.join(sub_save_dir, name).replace('tiff', 'jpg')
+                        im_save_path = os.path.join(sub_save_dir, name)
                         im.save(im_save_path)
-                        gd_save_path = im_save_path.replace('jpg', 'npy')
+                        gd_save_path = im_save_path.replace('png', 'npy')
                         np.save(gd_save_path, points)

@@ -28,7 +28,6 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.device.strip()  # set vis gpu
     torch.backends.cudnn.benchmark = False
     save_dir = os.path.dirname(args.model_path)
 

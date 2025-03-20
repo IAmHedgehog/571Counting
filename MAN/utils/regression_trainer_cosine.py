@@ -5,6 +5,7 @@ import sys
 import time
 import torch
 import json
+from tqdm import tqdm
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
@@ -107,7 +108,7 @@ class RegTrainer(Trainer):
         self.model.train()  # Set model to training mode
 
         # Iterate over data.
-        for step, (inputs, points, targets, st_sizes) in enumerate(self.dataloaders['train']):
+        for inputs, points, targets, st_sizes in tqdm(self.dataloaders['train']):
             inputs = inputs.to(self.device)
             st_sizes = st_sizes.to(self.device)
             gd_count = np.array([len(p) for p in points], dtype=np.float32)
