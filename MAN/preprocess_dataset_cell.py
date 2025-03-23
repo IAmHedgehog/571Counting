@@ -105,6 +105,8 @@ if __name__ == '__main__':
             im, points = generate_data(im_path)
             im_save_path = os.path.join(sub_save_dir, name)
             im.save(im_save_path)
+            gd_save_path = im_save_path.replace('png', 'npy')
+            np.save(gd_save_path, points)
     else:
         num_fold = 5
         img_folds = split_data(args.origin_dir, num_fold)
