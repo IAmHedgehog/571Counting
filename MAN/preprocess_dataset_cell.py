@@ -64,11 +64,11 @@ def generate_data(im_path):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process cell counting data')
-    parser.add_argument('--origin-dir', default='cell_resize_224',
+    parser.add_argument('--origin-dir', default='cell_resize_1024',
                         help='original data directory')
-    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v3_test',
+    parser.add_argument('--data-dir', default='cell_1024_Train_Val_Test_v3',
                         help='processed data directory')
-    parser.add_argument('--split', default='test',
+    parser.add_argument('--split', default='trainval',
                         help='which folder is processing.')
     args = parser.parse_args()
     return args
@@ -91,8 +91,8 @@ def split_data(folder, num_fold):
 if __name__ == '__main__':
     args = parse_args()
     save_dir = args.data_dir
-    min_size = 224
-    max_size = 224
+    min_size = 1024
+    max_size = 1024
 
     if args.split == 'test':
         sub_save_dir = os.path.join(save_dir, 'test')

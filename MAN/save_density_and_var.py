@@ -15,9 +15,9 @@ args = None
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
-    parser.add_argument('--data-dir', default=r'E:\Dataset\Counting\UCF-Train-Val-Test\test',
-                        help='training data directory')
-    parser.add_argument('--model-path', default='model/best_model.pth',
+    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v3_test',
+                        help='test data directory')
+    parser.add_argument('--model-path', default='models_lr_1e-5_batch_4_data_4/0401-042535/best_model.pth',
                         help='model directory')
     parser.add_argument('--device', default='0', help='assign device')
     args = parser.parse_args()
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     save_dir_d = os.path.join(save_dir, 'density')
     if not os.path.exists(save_dir_d):
         os.makedirs(save_dir_d)
-
+    print('------------->', save_dir_d)
     save_dir_viz = os.path.join(save_dir, 'vis')
     if not os.path.exists(save_dir_viz):
         os.makedirs(save_dir_viz)
@@ -44,8 +44,7 @@ if __name__ == '__main__':
                              [0.229, 0.224, 0.225])
     ])
 
-    im_list = glob(os.path.join(args.data_dir, '*.jpg'))
-
+    im_list = glob(os.path.join(args.data_dir, 'test', '*.png'))
 
     device = torch.device('cuda')
     model = vgg19_trans()
@@ -55,9 +54,9 @@ if __name__ == '__main__':
     num = 0
 
     for im_path in im_list:
-        gd_path = im_path.replace('jpg', 'npy')
+        gd_path = im_path.replace('png', 'npy')
         keypoints = np.load(gd_path)
-        name = os.path.basename(im_path).split('.')
+        name = os.path.basename(im_path).split('.')[0]
         # print(name)
         img = Image.open(im_path).convert('RGB')
         img_np = np.array(img)
@@ -72,7 +71,7 @@ if __name__ == '__main__':
             num += 1
             # logf = 'bpre_{:.2f}'.format(torch.sum(outputs))
             outputs = outputs.detach().cpu().numpy()[0][0]
-            # np.save(os.path.join(save_dir_d, name), outputs)
+            np.save(os.path.join(save_dir_d, name), outputs)
 
 
             outputs = cv2.resize(outputs, (w, h)) / 1.0
@@ -86,5 +85,5 @@ if __name__ == '__main__':
             #      im_path.replace(os.path.dirname(im_path), save_dir_viz))
             # cv2.imwrite(os.path.join(save_dir_viz,
             #                          im_path.replace('.JPG', logf+'_d.jpg')), outputs)
-            cv2.imwrite(os.path.join(save_dir_viz, logf), outputs)
+            cv2.imwrite(os.path.join(save_dir_viz, name + '.jpg'), outputs)
 

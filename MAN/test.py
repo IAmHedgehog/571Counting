@@ -11,12 +11,12 @@ args = None
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ')
-    parser.add_argument('--data-dir', default='cell_Train_Val_Test_v3_test',
+    parser.add_argument('--data-dir', default='cell_1024_Train_Val_Test_v3_test',
                         help='testing data directory')
-    parser.add_argument('--save-dir', default='model_v3_4/0320-125000/best_model.pth',
+    parser.add_argument('--save-dir', default='models_1024_lr_1e-5_batch_4_data_1/0517-104538/best_model.pth',
                         help='model directory')
     parser.add_argument('--device', default='0', help='assign device')
-    parser.add_argument('--out-csv', default='submission.csv')
+    parser.add_argument('--out-csv', default='submission_tune.csv')
     args = parser.parse_args()
     return args
 
@@ -24,7 +24,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    datasets = Crowd(os.path.join(args.data_dir, 'test'), 224, 8, is_gray=False, method='test')
+    datasets = Crowd(os.path.join(args.data_dir, 'test'), 256, 16, is_gray=False, method='test')
     dataloader = torch.utils.data.DataLoader(datasets, 1, shuffle=False,
                                              num_workers=8, pin_memory=False)
 
@@ -84,4 +84,4 @@ if __name__ == '__main__':
     with open(args.out_csv, 'w') as csv_f:
         csv_f.write('filename,prediction\n')
         for name, cnt in output_list:
-            csv_f.write(f'{name}.tiff,{round(cnt)}\n')
+            csv_f.write(f'{name},{round(cnt)}\n')

@@ -13,6 +13,8 @@ def parse_args():
                         help='directory to save models.')
     parser.add_argument('--save-all', type=bool, default=False,
                         help='whether to save all best model')
+    
+    # 0.01 - 1e-5
     parser.add_argument('--lr', type=float, default=5*1e-6,
                         help='the initial learning rate')
     parser.add_argument('--weight-decay', type=float, default=1e-5,
@@ -27,6 +29,8 @@ def parse_args():
                         help='the num of steps to log training information')
     parser.add_argument('--val-start', type=int, default=10,
                         help='the epoch start to val')
+    
+    # 2 - 32
     parser.add_argument('--batch-size', type=int, default=16,
                         help='train batch size')
     parser.add_argument('--device', default='0', help='assign device')
@@ -35,7 +39,7 @@ def parse_args():
 
     parser.add_argument('--is-gray', type=bool, default=False,
                         help='whether the input image is gray')
-    parser.add_argument('--crop-size', type=int, default=192,
+    parser.add_argument('--crop-size', type=int, default=256,
                         help='the crop size of the train image')
     parser.add_argument('--downsample-ratio', type=int, default=16,
                         help='downsample ratio')
